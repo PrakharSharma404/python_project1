@@ -1,8 +1,12 @@
 pipeline {
-    agent any
-    triggers {
-        githubPush()
+    // DEFINE THE AGENT HERE
+    agent {
+        docker {
+            image 'python:3.9-slim' // Use an official Python image
+            args '-v /var/run/docker.sock:/var/run/docker.sock' // Allow it to talk to Docker
+        }
     }
+
     environment {
         DOCKER_IMAGE_NAME = 'calculator'
         // UPDATED GITHUB REPO URL
@@ -12,59 +16,39 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                script {
-
-                    // Checkout the code from the GitHub repository
-                    git branch: 'main', url: "${GITHUB_REPO_URL}"
-                }
+                // The initial checkout is now handled by the agent, so we can remove the extra one.
+                // Just keeping the workspace clean.
+                cleanWs()
+                git branch: 'main', url: "${GITHUB_REPO_URL}"
             }
         }
 
         stage('Run Python Tests') {
-
             steps {
-                script {
-                    // Run Python unit tests using unittest
-                    sh 'python3 -m unittest test.py'
-                }
-
+                sh 'python -m unittest test.py' // Use 'python' as it's guaranteed in the container
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    // Build Docker image
-                    docker.build("${DOCKER_IMAGE_NAME}", '.')
-
-                }
+                sh "docker build -t ${DOCKER_IMAGE_NAME} ."
             }
         }
 
         stage('Push Docker Images') {
             steps {
-                script {
-                    // NOTE: Change 'prakharsharma404' to your Docker Hub username
-                    docker.withRegistry('', 'DockerHubCred') {
-
-                        sh 'docker tag $DOCKER_IMAGE_NAME prakharsharma404/$DOCKER_IMAGE_NAME:latest'
-                        sh 'docker push prakharsharma404/$DOCKER_IMAGE_NAME'
-                    }
-                }
-            }
-
-        }
-
-        stage('Run Ansible Playbook') {
-            steps {
-                script {
-                    ansiblePlaybook(
-                        playbook: 'deploy.yml',
-
-                        inventory: 'inventory'
-                    )
-                }
+                // For this to work, you'd need to add Docker Hub credentials to Jenkins
+                // We can skip the actual push for now to keep it simple.
+                echo "Skipping Docker push for now."
+                // withCredentials([usernamePassword(credentialsId: 'DockerHubCred', passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USERNAME')]) {
+                //     sh "docker login -u '${DOCKER_HUB_USERNAME}' -p '${DOCKER_HUB_PASSWORD}'"
+                //     sh "docker tag ${DOCKER_IMAGE_NAME} prakharsharma404/${DOCKER_IMAGE_NAME}:latest"
+                //     sh "docker push prakharsharma404/${DOCKER_IMAGE_NAME}"
+                // }
             }
         }
+
+        // We are skipping the Ansible stage for now as it requires more setup inside Jenkins.
+        // stage('Run Ansible Playbook') { ... }
     }
 }

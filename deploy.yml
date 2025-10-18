@@ -6,7 +6,6 @@
   tasks:
     - name: Pull Docker Image
       docker_image:
-        # NOTE: Change 'prakharsharma404' to your Docker Hub username
         name: "prakharsharma404/calculator"
         source: pull
       register: docker_pull_result
@@ -15,14 +14,8 @@
       debug:
         var: docker_pull_result
 
-    - name: Start Docker service
-      service:
-        name: docker
-        state: started
-
     - name: Remove existing container
       shell: docker rm -f calculator || true
 
     - name: Run Docker container
-      # NOTE: Change 'prakharsharma404' to your Docker Hub username
       shell: docker run -it -d --name calculator prakharsharma404/calculator
