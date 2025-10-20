@@ -1,8 +1,8 @@
 pipeline {
-    // DEFINE THE AGENT HERE
+    // DEFINE THE AGENT HERE - UPDATED TO OUR CUSTOM AGENT
     agent {
         docker {
-            image 'python:3.9-slim' // Use an official Python image
+            image 'my-python-docker-agent' // Use our new custom agent with Python and Docker
             args '-v /var/run/docker.sock:/var/run/docker.sock' // Allow it to talk to Docker
         }
     }
@@ -25,12 +25,14 @@ pipeline {
 
         stage('Run Python Tests') {
             steps {
-                sh 'python -m unittest test.py' // Use 'python' as it's guaranteed in the container
+                // 'python3' is available in our new agent
+                sh 'python3 -m unittest test.py'
             }
         }
 
         stage('Build Docker Image') {
             steps {
+                // 'docker' is available in our new agent
                 sh "docker build -t ${DOCKER_IMAGE_NAME} ."
             }
         }
